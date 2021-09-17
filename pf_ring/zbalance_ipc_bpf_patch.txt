@@ -15,7 +15,7 @@ index 7dd7ad6..c82173e 100644
  #include "pfring.h"
  #include "pfring_zc.h"
  #include "pfring_mod_sysdig.h"
-@@ -50,6 +56,9 @@
+@@ -54,6 +60,9 @@
  #define CACHE_LINE_LEN         64
  #define MAX_NUM_APP	       32
  #define IN_POOL_SIZE          256
@@ -25,7 +25,7 @@ index 7dd7ad6..c82173e 100644
 
  pfring_zc_cluster *zc;
  pfring_zc_worker *zw;
-@@ -83,6 +92,11 @@ volatile u_int8_t do_shutdown = 0;
+@@ -87,6 +96,11 @@ volatile u_int8_t do_shutdown = 0;
  u_int8_t n2disk_producer = 0;
  u_int32_t n2disk_threads;
 
@@ -36,8 +36,8 @@ index 7dd7ad6..c82173e 100644
 +
  /* ******************************** */
 
- #ifdef HAVE_ZMQ
-@@ -357,7 +371,14 @@ void printHelp(void) {
+ #ifdef HAVE_PF_RING_FT
+@@ -389,7 +403,14 @@ void printHelp(void) {
           "                 2 - Fan-out\n"
           "                 3 - Fan-out (1st) + Round-Robin (2nd, 3rd, ..)\n"
           "                 4 - GTP hash (Inner IP/Port or Seq-Num or Outer IP/Port)\n"
@@ -53,7 +53,7 @@ index 7dd7ad6..c82173e 100644
    printf("-r <queue>:<dev> Replace egress queue <queue> with device <dev> (multiple -r can be specified)\n");
    printf("-S <core id>     Enable Time Pulse thread and bind it to a core\n");
    printf("-R <nsec>        Time resolution (nsec) when using Time Pulse thread\n"
-@@ -423,6 +444,19 @@ int32_t ip_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in
+@@ -478,6 +499,19 @@ int32_t ip_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in
    return pfring_zc_builtin_ip_hash(pkt_handle, in_queue) % num_out_queues;
  }
 
@@ -73,7 +73,7 @@ index 7dd7ad6..c82173e 100644
  /* *************************************** */
 
  int64_t gtp_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
-@@ -590,10 +624,17 @@ int main(int argc, char* argv[]) {
+@@ -648,10 +682,17 @@ int main(int argc, char* argv[]) {
  #ifdef HAVE_ZMQ 
      "A:E:Z"
  #endif
@@ -91,7 +91,7 @@ index 7dd7ad6..c82173e 100644
 
    start_time.tv_sec = 0;
 
-@@ -692,12 +733,17 @@ int main(int argc, char* argv[]) {
+@@ -756,12 +797,17 @@ int main(int argc, char* argv[]) {
        time_pulse = 1; /* forcing time-pulse to handle rules expiration */
      break;
  #endif
@@ -109,7 +109,7 @@ index 7dd7ad6..c82173e 100644
    if (device == NULL) printHelp();
    if (cluster_id < 0) printHelp();
    if (applications == NULL) printHelp();
-@@ -736,13 +782,43 @@ int main(int argc, char* argv[]) {
+@@ -800,13 +846,43 @@ int main(int argc, char* argv[]) {
 
    if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4 || hash_mode == 5) && num_apps == 1)) { /* balancer */
      /* no constraints on number of queues */
@@ -155,7 +155,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -951,6 +1027,15 @@ int main(int argc, char* argv[]) {
+@@ -1031,6 +1107,15 @@ int main(int argc, char* argv[]) {
 
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
 
@@ -171,7 +171,7 @@ index 7dd7ad6..c82173e 100644
    off = 0;
 
    if (num_in_queues > 0) {
-@@ -971,7 +1056,11 @@ int main(int argc, char* argv[]) {
+@@ -1051,7 +1136,11 @@ int main(int argc, char* argv[]) {
      }
    }
 
@@ -183,7 +183,7 @@ index 7dd7ad6..c82173e 100644
      pfring_zc_distribution_func func = NULL;
 
      switch (hash_mode) {
-@@ -983,6 +1072,10 @@ int main(int argc, char* argv[]) {
+@@ -1063,6 +1152,10 @@ int main(int argc, char* argv[]) {
        break;
      case 5: if (strcmp(device, "sysdig") == 0) func = sysdig_distribution_func; else func =  gre_distribution_func;
        break;
