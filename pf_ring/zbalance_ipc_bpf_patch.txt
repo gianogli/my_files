@@ -179,7 +179,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -1405,6 +1510,15 @@
+@@ -1400,6 +1505,15 @@
  
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
  
@@ -192,10 +192,10 @@ index 7dd7ad6..c82173e 100644
 +  }
 +#endif
 +
-   off = 0;
- 
    if (num_in_queues > 0) {
-@@ -1432,7 +1546,11 @@
+     trace(TRACE_NORMAL, "Run your traffic generator as follows:\n");
+     for (i = 0; i < num_in_queues; i++)
+@@ -1426,7 +1540,11 @@
  
    trace(TRACE_NORMAL, "Running...");
  
@@ -207,7 +207,7 @@ index 7dd7ad6..c82173e 100644
  
      switch (hash_mode) {
        case 0: distr_func = rr_distribution_func;
-@@ -1458,6 +1576,13 @@
+@@ -1452,6 +1570,13 @@
        case 6: 
          distr_func =  direct_distribution_func;
        break;
@@ -221,7 +221,7 @@ index 7dd7ad6..c82173e 100644
      }
  
      zw = pfring_zc_run_balancer_v2(
-@@ -1505,6 +1630,11 @@
+@@ -1499,6 +1624,11 @@
        case 6: 
          distr_func = fo_multiapp_direct_distribution_func;
        break;
