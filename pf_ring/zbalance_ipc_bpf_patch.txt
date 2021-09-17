@@ -15,7 +15,7 @@ index 7dd7ad6..c82173e 100644
  #include "pfring.h"
  #include "pfring_zc.h"
  #include "pfring_mod_sysdig.h"
-@@ -61,6 +67,9 @@
+@@ -63,6 +69,9 @@
  #define CACHE_LINE_LEN         64
  #define MAX_NUM_APP	       32
  #define IN_POOL_SIZE          256
@@ -25,7 +25,7 @@ index 7dd7ad6..c82173e 100644
  
  #define EVENT_SIZE (sizeof(struct inotify_event))
  #define EVENT_BUF_LEN (1024 * (EVENT_SIZE + 16))
-@@ -103,6 +112,11 @@
+@@ -105,6 +114,11 @@
  char *vlan_filter = NULL;
  bitmap64_t(allowed_vlans, 1024);
  
@@ -34,32 +34,32 @@ index 7dd7ad6..c82173e 100644
 +  struct bpf_program bpf_code[MAX_NUM_BPF];
 +#endif
 +
- #ifdef HAVE_PF_RING_FT
- int notify_fd;
- int notify_wd;
-@@ -609,7 +623,20 @@
-          "                 3 - Fan-out (1st) + Round-Robin (2nd, 3rd, ..)\n"
+ #define MAX_MAP_VLAN_SIZE 4
+ u_int8_t map_vlan_size = 0;
+ u_int16_t map_vlan[MAX_MAP_VLAN_SIZE];
+@@ -616,7 +630,20 @@
           "                 4 - GTP hash (Inner IP/Port or Seq-Num or Outer IP/Port)\n"
           "                 5 - GRE hash (Inner or Outer IP)\n"
--         "                 6 - Interface X to queue X\n");
-+         "                 6 - Interface X to queue X\n"
+          "                 6 - Interface X to queue X\n"
+-         "                 7 - Ethernet type (check 0x8585 type and select the queue, other to queue 0)\n");
++         "                 7 - Ethernet type (check 0x8585 type and select the queue, other to queue 0)\n")
 +#ifdef ENABLE_BPF
-+         "                 7 - BPF balance mode: custom balancer by using BPF filters\n"
-+         "                 8 - BPF split mode: optimized balance mode by using a BPF filter\n"
-+         "                 9 - BPF mixed mode: Fan-out (1st) + custom balancer by using BPF filters (2nd, 3rd, ..)\n"
++         "                 8 - BPF balance mode: custom balancer by using BPF filters\n"
++         "                 9 - BPF split mode: optimized balance mode by using a BPF filter\n"
++         "                10 - BPF mixed mode: Fan-out (1st) + custom balancer by using BPF filters (2nd, 3rd, ..)\n"
 +#endif
 +         );
 +#ifdef ENABLE_BPF
-+  printf("-F <BPF filter>  In case of '-m 9' [...]\n");
-+  printf("-F <BPF filter>  In case of '-m 8' you mast configure 2 instances ('-n 2') [...]\n");
-+  printf("-F <BPF filters> In case of '-m 7' you must configure (<num inst> - 1) BPF filters using a\n"
++  printf("-F <BPF filter>  In case of '-m 10' [...]\n");
++  printf("-F <BPF filter>  In case of '-m 9' you mast configure 2 instances ('-n 2') [...]\n");
++  printf("-F <BPF filters> In case of '-m 8' you must configure (<num inst> - 1) BPF filters using a\n"
 +         "                 comma-separated list. The last instance will have all the packets that aren't\n"
 +         "                 been matched by the previous configured BPF filters\n");
 +#endif
    printf("-r <queue>:<dev> Replace egress queue <queue> with device <dev> (multiple -r can be specified)\n");
+   printf("-M <vlans>       Comma-separated list of VLANs to map VLAN to egress queues (-m 7 only)\n");
    printf("-S <core id>     Enable Time Pulse thread and bind it to a core\n");
-   printf("-R <nsec>        Time resolution (nsec) when using Time Pulse thread\n"
-@@ -744,6 +771,34 @@
+@@ -752,6 +779,34 @@
    return pfring_zc_builtin_ip_hash(pkt_handle, in_queue) % num_out_queues;
  }
  
@@ -94,7 +94,7 @@ index 7dd7ad6..c82173e 100644
  /* *************************************** */
  
  int64_t gtp_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
-@@ -938,6 +993,9 @@
+@@ -982,6 +1037,9 @@
  #ifdef HAVE_ZMQ 
      "A:E:Z"
  #endif
@@ -104,7 +104,7 @@ index 7dd7ad6..c82173e 100644
    ;
  #ifdef HAVE_PF_RING_FT
    char *ft_rules_conf = NULL;
-@@ -948,6 +1006,11 @@
+@@ -992,6 +1050,11 @@
    pfring_zc_idle_callback idle_func = NULL;
    pfring_zc_distribution_func distr_func = NULL;
    pfring_zc_filtering_func filter_func = NULL;
@@ -116,7 +116,7 @@ index 7dd7ad6..c82173e 100644
  
    start_time.tv_sec = 0;
  
-@@ -1067,6 +1130,11 @@
+@@ -1135,6 +1198,11 @@
        time_pulse = 1; /* forcing time-pulse to handle rules expiration */
      break;
  #endif
@@ -125,34 +125,34 @@ index 7dd7ad6..c82173e 100644
 +      filters = strdup(optarg);
 +      break;
 +#endif
-     case 'v':
-       trace_verbosity = 3;    
-     break;
-@@ -1148,6 +1216,15 @@
+     }
+   }
+  
+@@ -1211,6 +1279,15 @@
        case 6:
          num_consumer_queues_limit = 64; /* egress mask is 64 bit */
          break;
 +#ifdef ENABLE_BPF
-+      case 7:
++      case 8:
 +        num_consumer_queues_limit = MAX_NUM_BPF;
 +        break;
-+      case 8:
-+        break;
 +      case 9:
++        break;
++      case 10:
 +        break;
 +#endif
        default:
          printHelp();
          break;
-@@ -1167,6 +1244,34 @@
+@@ -1230,6 +1307,34 @@
      return -1;
    }
  
 +#ifdef ENABLE_BPF
-+  if ((hash_mode == 7 && (filters == NULL || num_consumer_queues < 2))) printHelp();
-+  if ((hash_mode == 8 && (filters == NULL || num_consumer_queues != 2))) printHelp();
-+  if ((hash_mode == 9 && (filters == NULL || num_consumer_queues < 3))) printHelp();
-+  if ((hash_mode != 7 && hash_mode != 8 && hash_mode !=9 && filters != NULL)) printHelp();
++  if ((hash_mode == 8 && (filters == NULL || num_consumer_queues < 2))) printHelp();
++  if ((hash_mode == 9 && (filters == NULL || num_consumer_queues != 2))) printHelp();
++  if ((hash_mode == 10 && (filters == NULL || num_consumer_queues < 3))) printHelp();
++  if ((hash_mode != 8 && hash_mode != 9 && hash_mode !=10 && filters != NULL)) printHelp();
 +
 +  if (filters != NULL) {
 +    bpf = strtok_r(filters, ",", &bpf_pos);
@@ -163,9 +163,9 @@ index 7dd7ad6..c82173e 100644
 +      bpf = strtok_r(NULL, ",", &bpf_pos);
 +    }
 +
-+    if (hash_mode == 7 && num_bpfs != (num_consumer_queues - 1)) printHelp();
-+    if (hash_mode == 8 && num_bpfs != 1) printHelp();
-+    if (hash_mode == 9 && num_bpfs != (num_consumer_queues - 2)) printHelp();
++    if (hash_mode == 8 && num_bpfs != (num_consumer_queues - 1)) printHelp();
++    if (hash_mode == 9 && num_bpfs != 1) printHelp();
++    if (hash_mode == 10 && num_bpfs != (num_consumer_queues - 2)) printHelp();
 +
 +    for (i = 0; i < num_bpfs; i++) {
 +      if (pfring_parse_bpf_filter(custom_bpf[i], MAX_CAPLEN, &(bpf_code[i])) != 0) {
@@ -179,7 +179,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -1432,6 +1537,15 @@
+@@ -1495,6 +1600,15 @
  
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
  
@@ -195,38 +195,38 @@ index 7dd7ad6..c82173e 100644
    if (num_in_queues > 0) {
      trace(TRACE_NORMAL, "Run your traffic generator as follows:\n");
      for (i = 0; i < num_in_queues; i++)
-@@ -1458,7 +1572,11 @@
- 
-   trace(TRACE_NORMAL, "Running...");
- 
+@@ -1527,7 +1632,11 @@
+         hash_mode == 5 || 
+         hash_mode == 6 || 
+         hash_mode == 7) && 
 +#ifdef ENABLE_BPF
-+  if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4 || hash_mode == 5 || hash_mode == 6) && num_apps == 1) || hash_mode == 7 || hash_mode == 8) { /* balancer */
++       num_apps == 1) || hash_mode == 8 || hash_mode == 9) { /* balancer */
 +#else
-   if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4 || hash_mode == 5 || hash_mode == 6) && num_apps == 1)) { /* balancer */
+        num_apps == 1)) { /* balancer */
 +#endif
  
      switch (hash_mode) {
        case 0: distr_func = rr_distribution_func;
-@@ -1484,6 +1602,13 @@
-       case 6: 
-         distr_func =  direct_distribution_func;
+@@ -1556,6 +1665,13 @@
+       case 7: 
+         distr_func =  eth_distribution_func;
        break;
 +#ifdef ENABLE_BPF
-+      case 7:
++      case 8:
 +        distr_func = ip_bpf_distribution_func;
 +      break;
-+      case 8:
++      case 9:
 +        distr_func = ip_bpf_split_distribution_func;
 +#endif
      }
  
      zw = pfring_zc_run_balancer_v2(
-@@ -1531,6 +1656,11 @@
+@@ -1603,6 +1728,11 @@
        case 6: 
          distr_func = fo_multiapp_direct_distribution_func;
        break;
 +#ifdef ENABLE_BPF
-+      case 9:
++      case 10:
 +        distr_func = ip_bpf_mixed_distribution_func;
 +      break;
 +#endif
