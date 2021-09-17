@@ -42,7 +42,7 @@ index 7dd7ad6..c82173e 100644
           "                 5 - GRE hash (Inner or Outer IP)\n"
           "                 6 - Interface X to queue X\n"
 -         "                 7 - Ethernet type (check 0x8585 type and select the queue, other to queue 0)\n");
-+         "                 7 - Ethernet type (check 0x8585 type and select the queue, other to queue 0)\n")
++         "                 7 - Ethernet type (check 0x8585 type and select the queue, other to queue 0)\n"
 +#ifdef ENABLE_BPF
 +         "                 8 - BPF balance mode: custom balancer by using BPF filters\n"
 +         "                 9 - BPF split mode: optimized balance mode by using a BPF filter\n"
