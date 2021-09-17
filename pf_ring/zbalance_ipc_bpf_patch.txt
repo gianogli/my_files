@@ -2,9 +2,9 @@ diff --git a/userland/examples_zc/zbalance_ipc.c b/userland/examples_zc/zbalance
 index 7dd7ad6..c82173e 100644
 --- a/userland/examples_zc/zbalance_ipc.c
 +++ b/userland/examples_zc/zbalance_ipc.c
-@@ -36,6 +36,12 @@
- #include <sched.h>
- #include <stdio.h>
+@@ -38,6 +38,12 @@
+ #include <sys/inotify.h>
+ #include <fcntl.h>
  
 +#define ENABLE_BPF
 +#ifdef ENABLE_BPF
@@ -15,7 +15,7 @@ index 7dd7ad6..c82173e 100644
  #include "pfring.h"
  #include "pfring_zc.h"
  #include "pfring_mod_sysdig.h"
-@@ -59,6 +65,9 @@
+@@ -61,6 +67,9 @@
  #define CACHE_LINE_LEN         64
  #define MAX_NUM_APP	       32
  #define IN_POOL_SIZE          256
@@ -23,9 +23,9 @@ index 7dd7ad6..c82173e 100644
 +#define MAX_NUM_BPF            16
 +#endif
  
- pfring_zc_cluster *zc;
- pfring_zc_worker *zw;
-@@ -98,6 +107,11 @@
+ #define EVENT_SIZE (sizeof(struct inotify_event))
+ #define EVENT_BUF_LEN (1024 * (EVENT_SIZE + 16))
+@@ -103,6 +112,11 @@
  char *vlan_filter = NULL;
  bitmap64_t(allowed_vlans, 1024);
  
@@ -34,10 +34,10 @@ index 7dd7ad6..c82173e 100644
 +  struct bpf_program bpf_code[MAX_NUM_BPF];
 +#endif
 +
- /* ******************************** */
- 
  #ifdef HAVE_PF_RING_FT
-@@ -589,7 +603,20 @@
+ int notify_fd;
+ int notify_wd;
+@@ -609,7 +623,20 @@
           "                 3 - Fan-out (1st) + Round-Robin (2nd, 3rd, ..)\n"
           "                 4 - GTP hash (Inner IP/Port or Seq-Num or Outer IP/Port)\n"
           "                 5 - GRE hash (Inner or Outer IP)\n"
@@ -59,7 +59,7 @@ index 7dd7ad6..c82173e 100644
    printf("-r <queue>:<dev> Replace egress queue <queue> with device <dev> (multiple -r can be specified)\n");
    printf("-S <core id>     Enable Time Pulse thread and bind it to a core\n");
    printf("-R <nsec>        Time resolution (nsec) when using Time Pulse thread\n"
-@@ -724,6 +751,34 @@
+@@ -744,6 +771,34 @@
    return pfring_zc_builtin_ip_hash(pkt_handle, in_queue) % num_out_queues;
  }
  
@@ -94,7 +94,7 @@ index 7dd7ad6..c82173e 100644
  /* *************************************** */
  
  int64_t gtp_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
-@@ -918,6 +973,9 @@
+@@ -938,6 +993,9 @@
  #ifdef HAVE_ZMQ 
      "A:E:Z"
  #endif
@@ -104,7 +104,7 @@ index 7dd7ad6..c82173e 100644
    ;
  #ifdef HAVE_PF_RING_FT
    char *ft_rules_conf = NULL;
-@@ -929,6 +987,11 @@
+@@ -948,6 +1006,11 @@
    pfring_zc_idle_callback idle_func = NULL;
    pfring_zc_distribution_func distr_func = NULL;
    pfring_zc_filtering_func filter_func = NULL;
@@ -116,7 +116,7 @@ index 7dd7ad6..c82173e 100644
  
    start_time.tv_sec = 0;
  
-@@ -1048,6 +1111,11 @@
+@@ -1067,6 +1130,11 @@
        time_pulse = 1; /* forcing time-pulse to handle rules expiration */
      break;
  #endif
@@ -128,7 +128,7 @@ index 7dd7ad6..c82173e 100644
      case 'v':
        trace_verbosity = 3;    
      break;
-@@ -1129,6 +1197,15 @@
+@@ -1148,6 +1216,15 @@
        case 6:
          num_consumer_queues_limit = 64; /* egress mask is 64 bit */
          break;
@@ -144,7 +144,7 @@ index 7dd7ad6..c82173e 100644
        default:
          printHelp();
          break;
-@@ -1148,6 +1225,34 @@
+@@ -1167,6 +1244,34 @@
      return -1;
    }
  
@@ -179,7 +179,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -1400,6 +1505,15 @@
+@@ -1432,6 +1537,15 @@
  
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
  
@@ -195,7 +195,7 @@ index 7dd7ad6..c82173e 100644
    if (num_in_queues > 0) {
      trace(TRACE_NORMAL, "Run your traffic generator as follows:\n");
      for (i = 0; i < num_in_queues; i++)
-@@ -1426,7 +1540,11 @@
+@@ -1458,7 +1572,11 @@
  
    trace(TRACE_NORMAL, "Running...");
  
@@ -207,7 +207,7 @@ index 7dd7ad6..c82173e 100644
  
      switch (hash_mode) {
        case 0: distr_func = rr_distribution_func;
-@@ -1452,6 +1570,13 @@
+@@ -1484,6 +1602,13 @@
        case 6: 
          distr_func =  direct_distribution_func;
        break;
@@ -221,7 +221,7 @@ index 7dd7ad6..c82173e 100644
      }
  
      zw = pfring_zc_run_balancer_v2(
-@@ -1499,6 +1624,11 @@
+@@ -1531,6 +1656,11 @@
        case 6: 
          distr_func = fo_multiapp_direct_distribution_func;
        break;
