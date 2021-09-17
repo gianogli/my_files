@@ -73,7 +73,7 @@ index 7dd7ad6..c82173e 100644
  /* *************************************** */
 
  int32_t gtp_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
-@@ -550,10 +584,17 @@ int main(int argc, char* argv[]) {
+@@ -551,10 +585,17 @@ int main(int argc, char* argv[]) {
  #ifdef HAVE_ZMQ 
      "A:E:Z"
  #endif
@@ -91,7 +91,7 @@ index 7dd7ad6..c82173e 100644
 
    start_time.tv_sec = 0;
 
-@@ -649,12 +690,17 @@ int main(int argc, char* argv[]) {
+@@ -653,12 +694,17 @@ int main(int argc, char* argv[]) {
        time_pulse = 1; /* forcing time-pulse to handle rules expiration */
      break;
  #endif
@@ -109,7 +109,7 @@ index 7dd7ad6..c82173e 100644
    if (device == NULL) printHelp();
    if (cluster_id < 0) printHelp();
    if (applications == NULL) printHelp();
-@@ -693,13 +739,43 @@ int main(int argc, char* argv[]) {
+@@ -697,13 +743,43 @@ int main(int argc, char* argv[]) {
 
    if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4) && num_apps == 1)) { /* balancer */
      /* no constraints on number of queues */
@@ -155,7 +155,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -898,6 +974,15 @@ int main(int argc, char* argv[]) {
+@@ -902,6 +978,15 @@ int main(int argc, char* argv[]) {
 
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
 
@@ -171,7 +171,7 @@ index 7dd7ad6..c82173e 100644
    off = 0;
 
    if (num_in_queues > 0) {
-@@ -918,7 +1003,11 @@ int main(int argc, char* argv[]) {
+@@ -922,7 +1007,11 @@ int main(int argc, char* argv[]) {
      }
    }
 
@@ -183,7 +183,7 @@ index 7dd7ad6..c82173e 100644
      pfring_zc_distribution_func func = NULL;
 
      switch (hash_mode) {
-@@ -928,6 +1017,10 @@ int main(int argc, char* argv[]) {
+@@ -932,6 +1021,10 @@ int main(int argc, char* argv[]) {
        break;
      case 4: if (strcmp(device, "sysdig") == 0) func = sysdig_distribution_func; else func =  gtp_distribution_func;
        break;
