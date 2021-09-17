@@ -155,7 +155,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -902,6 +978,15 @@ int main(int argc, char* argv[]) {
+@@ -904,6 +980,15 @@ int main(int argc, char* argv[]) {
 
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
 
@@ -171,7 +171,7 @@ index 7dd7ad6..c82173e 100644
    off = 0;
 
    if (num_in_queues > 0) {
-@@ -922,7 +1007,11 @@ int main(int argc, char* argv[]) {
+@@ -924,7 +1009,11 @@ int main(int argc, char* argv[]) {
      }
    }
 
@@ -183,7 +183,7 @@ index 7dd7ad6..c82173e 100644
      pfring_zc_distribution_func func = NULL;
 
      switch (hash_mode) {
-@@ -932,6 +1021,10 @@ int main(int argc, char* argv[]) {
+@@ -934,6 +1023,10 @@ int main(int argc, char* argv[]) {
        break;
      case 4: if (strcmp(device, "sysdig") == 0) func = sysdig_distribution_func; else func =  gtp_distribution_func;
        break;
