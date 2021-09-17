@@ -60,7 +60,7 @@ index 7dd7ad6..c82173e 100644
 +#ifdef ENABLE_BPF
 +/* *************************************** */
 +
-+int32_t ip_bpf_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
++int64_t ip_bpf_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
 +  long num_out_queues = (long) user;
 +  u_int32_t i;
 +
@@ -72,8 +72,8 @@ index 7dd7ad6..c82173e 100644
 +#endif
  /* *************************************** */
 
- int32_t gtp_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
-@@ -551,10 +585,17 @@ int main(int argc, char* argv[]) {
+ int64_t gtp_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
+@@ -553,10 +587,17 @@ int main(int argc, char* argv[]) {
  #ifdef HAVE_ZMQ 
      "A:E:Z"
  #endif
@@ -91,7 +91,7 @@ index 7dd7ad6..c82173e 100644
 
    start_time.tv_sec = 0;
 
-@@ -653,12 +694,17 @@ int main(int argc, char* argv[]) {
+@@ -655,12 +696,17 @@ int main(int argc, char* argv[]) {
        time_pulse = 1; /* forcing time-pulse to handle rules expiration */
      break;
  #endif
@@ -109,12 +109,12 @@ index 7dd7ad6..c82173e 100644
    if (device == NULL) printHelp();
    if (cluster_id < 0) printHelp();
    if (applications == NULL) printHelp();
-@@ -697,13 +743,43 @@ int main(int argc, char* argv[]) {
+@@ -699,13 +745,43 @@ int main(int argc, char* argv[]) {
 
    if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4) && num_apps == 1)) { /* balancer */
      /* no constraints on number of queues */
 -  } else { /* fan-out */ 
--    if (num_consumer_queues > 32 /* egress mask is 32 bit */) { 
+-    if (num_consumer_queues > 64 /* egress mask is 32 bit */) { 
 +#ifdef ENABLE_BPF
 +  } else if (hash_mode == 5) { /* balancer with BPF custom filters */
 +    if (num_consumer_queues > MAX_NUM_BPF) {
@@ -123,8 +123,8 @@ index 7dd7ad6..c82173e 100644
 +    }
 +#endif
 +  } else { /* fan-out */
-+    if (num_consumer_queues > 32 /* egress mask is 32 bit */) {
-       trace(TRACE_ERROR, "Misconfiguration detected: you cannot use more than 32 egress queues in fan-out or multi-app mode\n");
++    if (num_consumer_queues > 64 /* egress mask is 32 bit */) {
+       trace(TRACE_ERROR, "Misconfiguration detected: you cannot use more than 64 egress queues in fan-out or multi-app mode\n");
        return -1;
      }
    }
@@ -155,7 +155,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -904,6 +980,15 @@ int main(int argc, char* argv[]) {
+@@ -906,6 +982,15 @@ int main(int argc, char* argv[]) {
 
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
 
@@ -171,7 +171,7 @@ index 7dd7ad6..c82173e 100644
    off = 0;
 
    if (num_in_queues > 0) {
-@@ -924,7 +1009,11 @@ int main(int argc, char* argv[]) {
+@@ -926,7 +1011,11 @@ int main(int argc, char* argv[]) {
      }
    }
 
@@ -183,7 +183,7 @@ index 7dd7ad6..c82173e 100644
      pfring_zc_distribution_func func = NULL;
 
      switch (hash_mode) {
-@@ -934,6 +1023,10 @@ int main(int argc, char* argv[]) {
+@@ -936,6 +1025,10 @@ int main(int argc, char* argv[]) {
        break;
      case 4: if (strcmp(device, "sysdig") == 0) func = sysdig_distribution_func; else func =  gtp_distribution_func;
        break;
