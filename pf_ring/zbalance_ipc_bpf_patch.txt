@@ -37,14 +37,14 @@ index 7dd7ad6..c82173e 100644
  /* ******************************** */
 
  #ifdef HAVE_PF_RING_FT
-@@ -402,7 +416,14 @@ void printHelp(void) {
-          "                 2 - Fan-out\n"
+@@ -403,7 +417,14 @@ void printHelp(void) {
           "                 3 - Fan-out (1st) + Round-Robin (2nd, 3rd, ..)\n"
           "                 4 - GTP hash (Inner IP/Port or Seq-Num or Outer IP/Port)\n"
--         "                 5 - GRE hash (Inner or Outer IP)\n");
-+         "                 5 - GRE hash (Inner or Outer IP)\n"
+          "                 5 - GRE hash (Inner or Outer IP)\n"
+-         "                 6 - Interface X to queue X\n");
++         "                 6 - Interface X to queue X\n"
 +#ifdef ENABLE_BPF
-+         "                 6 - BPF mode: custom balancer by using BPF filters\n");
++         "                 7 - BPF mode: custom balancer by using BPF filters\n");
 +  printf("-F <BPF filters> In case of '-m 6' you must configure (<num inst> - 1) BPF filters using a\n"
 +         "                 comma-separated list. The last instance will have all the packets that aren't\n"
 +         "                 been matched by the previous configured BPF filters\n"
@@ -53,7 +53,7 @@ index 7dd7ad6..c82173e 100644
    printf("-r <queue>:<dev> Replace egress queue <queue> with device <dev> (multiple -r can be specified)\n");
    printf("-S <core id>     Enable Time Pulse thread and bind it to a core\n");
    printf("-R <nsec>        Time resolution (nsec) when using Time Pulse thread\n"
-@@ -493,6 +514,19 @@ int32_t ip_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in
+@@ -494,6 +515,19 @@ int32_t ip_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in
    return pfring_zc_builtin_ip_hash(pkt_handle, in_queue) % num_out_queues;
  }
 
@@ -73,7 +73,7 @@ index 7dd7ad6..c82173e 100644
  /* *************************************** */
 
  int64_t gtp_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
-@@ -663,10 +697,17 @@ int main(int argc, char* argv[]) {
+@@ -705,10 +739,17 @@ int main(int argc, char* argv[]) {
  #ifdef HAVE_ZMQ 
      "A:E:Z"
  #endif
@@ -91,7 +91,7 @@ index 7dd7ad6..c82173e 100644
 
    start_time.tv_sec = 0;
 
-@@ -771,12 +812,17 @@ int main(int argc, char* argv[]) {
+@@ -813,12 +854,17 @@ int main(int argc, char* argv[]) {
        time_pulse = 1; /* forcing time-pulse to handle rules expiration */
      break;
  #endif
@@ -109,28 +109,24 @@ index 7dd7ad6..c82173e 100644
    if (device == NULL) printHelp();
    if (cluster_id < 0) printHelp();
    if (applications == NULL) printHelp();
-@@ -815,13 +861,43 @@ int main(int argc, char* argv[]) {
-
-   if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4 || hash_mode == 5) && num_apps == 1)) { /* balancer */
-     /* no constraints on number of queues */
--  } else { /* fan-out */ 
--    if (num_consumer_queues > 64 /* egress mask is 32 bit */) { 
+@@ -861,6 +907,11 @@ int main(int argc, char* argv[]) {
+       case 6:
+         num_consumer_queues_limit = 64; /* egress mask is 64 bit */
+         break;
 +#ifdef ENABLE_BPF
-+  } else if (hash_mode == 6) { /* balancer with BPF custom filters */
-+    if (num_consumer_queues > MAX_NUM_BPF) {
-+      trace(TRACE_ERROR, "Misconfiguration detected: you cannot use more than %i filtered queues in BPF balancer mode\n", MAX_NUM_BPF);
-+      return -1;
-+    }
++      case 7:
++        num_consumer_queues_limit = MAX_NUM_BPF;
++        break;
 +#endif
-+  } else { /* fan-out */
-+    if (num_consumer_queues > 64 /* egress mask is 32 bit */) {
-       trace(TRACE_ERROR, "Misconfiguration detected: you cannot use more than 64 egress queues in fan-out or multi-app mode\n");
-       return -1;
-     }
+       default:
+         printHelp();
+         break;
+@@ -880,6 +926,29 @@ int main(int argc, char* argv[]) {
+     return -1;
    }
-
+ 
 +#ifdef ENABLE_BPF
-+  if ((hash_mode == 6 && (filters == NULL || num_consumer_queues < 2)) || (hash_mode != 6 && filters != NULL)) printHelp();
++  if ((hash_mode == 7 && (filters == NULL || num_consumer_queues < 2)) || (hash_mode != 7 && filters != NULL)) printHelp();
 +
 +  if (filters != NULL) {
 +    bpf = strtok_r(filters, ",", &bpf_pos);
@@ -141,7 +137,7 @@ index 7dd7ad6..c82173e 100644
 +      bpf = strtok_r(NULL, ",", &bpf_pos);
 +    }
 +
-+    if (hash_mode == 6 && num_bpfs != (num_consumer_queues -1)) printHelp();
++    if (hash_mode == 7 && num_bpfs != (num_consumer_queues -1)) printHelp();
 +
 +    for (i = 0; i < num_bpfs; i++) {
 +      if (pfring_parse_bpf_filter(custom_bpf[i], MAX_CAPLEN, &(bpf_code[i])) != 0) {
@@ -155,7 +151,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -1046,6 +1122,15 @@ int main(int argc, char* argv[]) {
+@@ -1104,6 +1173,15 @@ int main(int argc, char* argv[]) {
 
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
 
@@ -171,24 +167,24 @@ index 7dd7ad6..c82173e 100644
    off = 0;
 
    if (num_in_queues > 0) {
-@@ -1066,7 +1151,11 @@ int main(int argc, char* argv[]) {
+@@ -1124,7 +1209,11 @@ int main(int argc, char* argv[]) {
      }
    }
 
 +#ifdef ENABLE_BPF
-+  if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4 || hash_mode == 5) && num_apps == 1) || hash_mode == 6) { /* balancer */
++  if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4 || hash_mode == 5 || hash_mode == 6) && num_apps == 1) || hash_mode == 7) { /* balancer */
 +#else
-   if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4 || hash_mode == 5) && num_apps == 1)) { /* balancer */
+   if (hash_mode == 0 || ((hash_mode == 1 || hash_mode == 4 || hash_mode == 5 || hash_mode == 6) && num_apps == 1)) { /* balancer */
 +#endif
      pfring_zc_distribution_func func = NULL;
 
      switch (hash_mode) {
-@@ -1078,6 +1167,10 @@ int main(int argc, char* argv[]) {
+@@ -1138,6 +1227,10 @@ int main(int argc, char* argv[]) {
        break;
-     case 5: if (strcmp(device, "sysdig") == 0) func = sysdig_distribution_func; else func =  gre_distribution_func;
+     case 6: func =  direct_distribution_func;
        break;
 +#ifdef ENABLE_BPF
-+    case 6: func = ip_bpf_distribution_func;
++    case 7: func = ip_bpf_distribution_func;
 +      break;
 +#endif
      }
