@@ -1,0 +1,22 @@
+--- a/httpry.c
++++ b/httpry.c
+@@ -568,6 +568,11 @@
+                         print_stats();
+                         cleanup();
+                         break;
++                case SIGPIPE:
++                        LOG_PRINT("Caught SIGPIPE, shutting down...");
++                        print_stats();
++                        cleanup();
++                        break;
+                 default:
+                         LOG_WARN("Ignoring unknown signal '%d'", sig);
+                         return;
+@@ -676,6 +681,7 @@
+
+         signal(SIGHUP, &handle_signal);
+         signal(SIGINT, &handle_signal);
++        signal(SIGPIPE, &handle_signal);
+
+         /* Process command line arguments */
+         while ((opt = getopt(argc, argv, "b:df:Fhpqi:l:m:n:o:P:r:st:u:S:")) != -1) {
