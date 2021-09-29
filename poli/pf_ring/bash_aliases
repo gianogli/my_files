@@ -1,0 +1,69 @@
+# Alias ICTSEC
+
+alias show_optical_power='for ETH in eth2 eth3 eth4 eth5 eth6 eth7 eth8 eth9; do echo -n $ETH":"; ethtool -m $ETH | grep optical\ power | sed -e "s/.*\:/\ RX\ optical\ power:/"; done'
+
+alias sort-ip='sort -n -t . -k 1,1 -k 2,2 -k 3,3 -k 4,4'
+
+alias pf_tcpdump='/usr/local/src/deri/PF_RING/userland/tcpdump/tcpdump'
+
+PF_WRAPPER="/usr/local/bin/pf_wrapper.sh"
+
+alias pf_tcpdump_inside='$PF_WRAPPER inside tcpdump'
+alias pf_tcpdump_outside='$PF_WRAPPER outside tcpdump'
+
+alias pf_ngrep_inside='$PF_WRAPPER inside ngrep'
+alias pf_ngrep_outside='$PF_WRAPPER outside ngrep'
+
+alias pf_httpry_inside='$PF_WRAPPER inside httpry'
+alias pf_httpry_outside='$PF_WRAPPER outside httpry'
+
+alias pf_httpry_filtered_inside='pf_httpry_inside "-f timestamp,source-ip,dest-ip,direction,method,host"'
+alias pf_httpry_filtered_outside='pf_httpry_outside "-f timestamp,source-ip,dest-ip,direction,method,host"'
+
+alias worms_inside='pf_tcpdump_inside "-f port \(22 or 135 or 139 or 445\) and $TCP_SYN"'
+alias worms_outside='pf_tcpdump_outside "-f port \(22 or 135 or 139 or 445\) and $TCP_SYN"'
+
+alias worms_inside_all_syn_in='pf_tcpdump_inside "-f $TCP_SYN and dst net $PUBLIC_NETS"'
+alias worms_inside_all_syn_out='pf_tcpdump_inside "-f $TCP_SYN and src net $PUBLIC_NETS"'
+alias worms_outside_all_syn_in='pf_tcpdump_outside "-f $TCP_SYN and dst net $PUBLIC_NETS"'
+alias worms_outside_all_syn_out='pf_tcpdump_outside "-f $TCP_SYN and src net $PUBLIC_NETS"'
+
+alias worms_inside_all_syn_in_no_web='pf_tcpdump_inside "-f $TCP_SYN and dst net $PUBLIC_NETS and not port \(53 or 80 or 443\)"'
+alias worms_inside_all_syn_out_no_web='pf_tcpdump_inside "-f $TCP_SYN and src net $PUBLIC_NETS and not port \(53 or 80 or 443\)"'
+alias worms_outside_all_syn_in_no_web='pf_tcpdump_outside "-f $TCP_SYN and dst net $PUBLIC_NETS and not port \(53 or 80 or 443\)"'
+alias worms_outside_all_syn_out_no_web='pf_tcpdump_outside "-f $TCP_SYN and src net $PUBLIC_NETS and not port \(53 or 80 or 443\)"'
+
+alias worms_inside_ms='pf_tcpdump_inside "-f \(port 135 or 139 or 445\) and $TCP_SYN"'
+alias worms_outside_ms='pf_tcpdump_outside "-f \(port 135 or 139 or 445\) and $TCP_SYN"'
+
+alias worms_inside_rdp='pf_tcpdump_inside "-f tcp dst port 3389 and $TCP_SYN"'
+alias worms_inside_rdp_in='pf_tcpdump_inside "-f tcp dst port 3389 and $TCP_SYN and dst net $PUBLIC_NETS"'
+alias worms_inside_rdp_out='pf_tcpdump_inside "-f tcp dst port 3389 and $TCP_SYN and src net $PUBLIC_NETS"'
+alias worms_outside_rdp='pf_tcpdump_outside "-f tcp dst port 3389 and $TCP_SYN"'
+alias worms_outside_rdp_in='pf_tcpdump_outside "-f tcp dst port 3389 and $TCP_SYN and dst net $PUBLIC_NETS"'
+alias worms_outside_rdp_out='pf_tcpdump_outside "-f tcp dst port 3389 and $TCP_SYN and src net $PUBLIC_NETS"'
+
+alias worms_inside_ssh='pf_tcpdump_inside "-f tcp dst port 22 and $TCP_SYN"'
+alias worms_inside_ssh_in='pf_tcpdump_inside "-f tcp dst port 22 and $TCP_SYN and dst net $PUBLIC_NETS"'
+alias worms_inside_ssh_out='pf_tcpdump_inside "-f tcp dst port 22 and $TCP_SYN and src net $PUBLIC_NETS"'
+alias worms_outside_ssh='pf_tcpdump_outside "-f tcp dst port 22 and $TCP_SYN"'
+alias worms_outside_ssh_in='pf_tcpdump_outside "-f tcp dst port 22 and $TCP_SYN and dst net $PUBLIC_NETS"'
+alias worms_outside_ssh_out='pf_tcpdump_outside "-f tcp dst port 22 and $TCP_SYN and src net $PUBLIC_NETS"'
+
+alias worms_inside_ssh_or_rdp_in='pf_tcpdump_inside "-f tcp dst port \(22 or 3389\) and $TCP_SYN and dst net $PUBLIC_NETS"'
+
+alias worms_inside_spam_out='pf_tcpdump_inside "-f \(src net $PUBLIC_NETS or src net $PRIVATE_NETS\) and \(port 25\) and $TCP_SYN"'
+alias worms_outside_spam_out='pf_tcpdump_outside "-f \(src net $PUBLIC_NETS or src net $PRIVATE_NETS\) and \(port 25\) and $TCP_SYN"'
+
+alias worms_inside_irc_web='pf_ngrep_inside "-it \(port \(6667 or 6668 or 6669 or 7000\) and not port 25\)"'
+alias worms_inside_irc_noweb='pf_ngrep_inside "-it \(port \(6667 or 6668 or 6669 or 7000\) and not port \(25 or 53 or 80 or 443 or 993\)\)"'
+alias worms_outside_irc_web='pf_ngrep_outside "-it \(port \(6667 or 6668 or 6669 or 7000\) and not port 25\)"'
+alias worms_outside_irc_noweb='pf_ngrep_outside "-it \(port \(6667 or 6668 or 6669 or 7000\) and not port \(25 or 53 or 80 or 443 or 993\)\)"'
+
+alias worms_inside_proxy='pf_ngrep_inside "-it GET\ http dst net $PUBLIC_NETS and not \(src net $PUBLIC_NETS or src net $PRIVATE_NETS\)"'
+alias worms_outside_proxy='pf_ngrep_outside "-it GET\ http dst net $PUBLIC_NETS and not \(src net $PUBLIC_NETS or src net $PRIVATE_NETS\)"'
+
+alias worms_inside_polito_http_website='pf_httpry_filtered_inside "dst port 80 and dst net $PUBLIC_NETS" | grep "GET\|POST\|HEAD"'
+alias worms_outside_polito_http_website='pf_httpry_filtered_outside "dst port 80 and dst net $PUBLIC_NETS" | grep "GET\|POST\|HEAD"'
+
+alias zbalance_bpf_ipc='/usr/local/src/deri/PF_RING/userland/examples_zc/zbalance_ipc'
