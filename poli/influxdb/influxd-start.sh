@@ -7,13 +7,13 @@
 
 case "$1" in
         outside)
-            CORES_NUMA="120-143"
+            CORES_NUMA="72-83,168-179"
             ;;
         inside)
-            CORES_NUMA="96-119"
+            CORES_NUMA="84-95,180-191"
             ;;
         wifi)
-	    CORES_NUMA="96-119"
+	    CORES_NUMA="48-59,144-155"
             ;;
         *)
             echo $"Usage: $0 {inside|wifi|outside}"
@@ -29,7 +29,7 @@ if [ -f "$INFLUXD_PID_FILE" ]; then
     exit 1
 fi
 
-su influxdb -g influxdb -m -c "/usr/bin/taskset -ca $CORES_NUMA /usr/bin/influxd -config $INFLUXD_CONF_FILE $INFLUXD_OPTS &"
+numactl -C $CORES_NUMA /usr/bin/influxd -config $INFLUXD_CONF_FILE $INFLUXD_OPTS &
 PID=`ps aux | grep "/usr/bin/influxd -config $INFLUXD_CONF_FILE" | grep ^influxdb | xargs | cut -d" " -f2`
 echo $PID > $INFLUXD_PID_FILE
 
