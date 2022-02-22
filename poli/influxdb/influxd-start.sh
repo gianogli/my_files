@@ -21,7 +21,7 @@ case "$1" in
 esac
 
 INFLUXD_CONF_FILE="/etc/influxdb/influxdb-$1.conf"
-INFLUXD_PID_FILE="/var/lib/influxdb/influxd-$1.pid"
+INFLUXD_PID_FILE="/run/influxdb/influxdb-$1.pid"
 
 if [ -f "$INFLUXD_PID_FILE" ]; then
     echo "PID file for influxd-$1 already found!"
