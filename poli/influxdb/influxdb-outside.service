@@ -14,6 +14,8 @@ ExecStart=/usr/local/bin/influxd-start.sh outside
 KillMode=control-group
 Restart=on-failure
 Type=forking
+RuntimeDirectory=influxdb
+RuntimeDirectoryMode=755
 PIDFile=/run/influxdb/influxdb-outside.pid
 
 [Install]
