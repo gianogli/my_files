@@ -37,12 +37,12 @@ index 7dd7ad6..c82173e 100644
  #define MAX_MAP_VLAN_SIZE 4
  u_int8_t map_vlan_size = 0;
  u_int16_t map_vlan[MAX_MAP_VLAN_SIZE];
-@@ -616,7 +630,20 @@
-          "                 4 - GTP hash (Inner IP/Port or Seq-Num or Outer IP/Port)\n"
-          "                 5 - GRE hash (Inner or Outer IP)\n"
+@@ -619,7 +633,20 @@
+          "                 4 - GTP hash (Inner Source/Dest IP/Port or Seq-Num or Outer Source/Dest IP/Port)\n"
+          "                 5 - GRE hash (Inner or Outer Source/Dest IP)\n"
           "                 6 - Interface X to queue X\n"
--         "                 7 - Ethernet type (check 0x8585 type and select the queue, other to queue 0)\n");
-+         "                 7 - Ethernet type (check 0x8585 type and select the queue, other to queue 0)\n"
+-         "                 7 - VLAN ID encapsulated in Ethernet type 0x8585 (see -Y). Queue is selected based on -M. Other Ethernet types to queue 0.\n");
++         "                 7 - VLAN ID encapsulated in Ethernet type 0x8585 (see -Y). Queue is selected based on -M. Other Ethernet types to queue 0.\n")
 +#ifdef ENABLE_BPF
 +         "                 8 - BPF balance mode: custom balancer by using BPF filters\n"
 +         "                 9 - BPF split mode: optimized balance mode by using a BPF filter\n"
@@ -58,8 +58,8 @@ index 7dd7ad6..c82173e 100644
 +#endif
    printf("-r <queue>:<dev> Replace egress queue <queue> with device <dev> (multiple -r can be specified)\n");
    printf("-M <vlans>       Comma-separated list of VLANs to map VLAN to egress queues (-m 7 only)\n");
-   printf("-S <core id>     Enable Time Pulse thread and bind it to a core\n");
-@@ -752,6 +779,34 @@
+   printf("-Y <eth type>    Ethernet type used in -m 7. Default: %u (0x8585)\n", ntohs(ETH_P_8585));
+@@ -756,6 +785,34 @@
    return pfring_zc_builtin_ip_hash(pkt_handle, in_queue) % num_out_queues;
  }
  
@@ -94,7 +94,7 @@ index 7dd7ad6..c82173e 100644
  /* *************************************** */
  
  int64_t gtp_distribution_func(pfring_zc_pkt_buff *pkt_handle, pfring_zc_queue *in_queue, void *user) {
-@@ -982,6 +1037,9 @@
+@@ -984,6 +1039,9 @@
  #ifdef HAVE_ZMQ 
      "A:E:Z"
  #endif
@@ -104,7 +104,7 @@ index 7dd7ad6..c82173e 100644
    ;
  #ifdef HAVE_PF_RING_FT
    char *ft_rules_conf = NULL;
-@@ -992,6 +1050,11 @@
+@@ -994,6 +1052,11 @@
    pfring_zc_idle_callback idle_func = NULL;
    pfring_zc_distribution_func distr_func = NULL;
    pfring_zc_filtering_func filter_func = NULL;
@@ -116,7 +116,7 @@ index 7dd7ad6..c82173e 100644
  
    start_time.tv_sec = 0;
  
-@@ -1135,6 +1198,11 @@
+@@ -1140,6 +1203,11 @@
        time_pulse = 1; /* forcing time-pulse to handle rules expiration */
      break;
  #endif
@@ -128,7 +128,7 @@ index 7dd7ad6..c82173e 100644
      }
    }
   
-@@ -1211,6 +1279,15 @@
+@@ -1216,6 +1284,15 @@
        case 6:
          num_consumer_queues_limit = 64; /* egress mask is 64 bit */
          break;
@@ -144,7 +144,7 @@ index 7dd7ad6..c82173e 100644
        default:
          printHelp();
          break;
-@@ -1230,6 +1307,34 @@
+@@ -1235,6 +1312,34 @@
      return -1;
    }
  
@@ -179,7 +179,7 @@ index 7dd7ad6..c82173e 100644
    for (i = 0; i < num_devices; i++) {
      if (strcmp(devices[i], "Q") != 0) num_real_devices++;
      else num_in_queues++;
-@@ -1495,6 +1600,15 @
+@@ -1501,6 +1606,15 @
  
    trace(TRACE_NORMAL, "Starting balancer with %d consumer queues..\n", num_consumer_queues);
  
@@ -195,7 +195,7 @@ index 7dd7ad6..c82173e 100644
    if (num_in_queues > 0) {
      trace(TRACE_NORMAL, "Run your traffic generator as follows:\n");
      for (i = 0; i < num_in_queues; i++)
-@@ -1527,7 +1632,11 @@
+@@ -1533,7 +1638,11 @@
          hash_mode == 5 || 
          hash_mode == 6 || 
          hash_mode == 7) && 
@@ -207,7 +207,7 @@ index 7dd7ad6..c82173e 100644
  
      switch (hash_mode) {
        case 0: distr_func = rr_distribution_func;
-@@ -1556,6 +1665,13 @@
+@@ -1562,6 +1671,13 @@
        case 7: 
          distr_func =  eth_distribution_func;
        break;
@@ -221,7 +221,7 @@ index 7dd7ad6..c82173e 100644
      }
  
      zw = pfring_zc_run_balancer_v2(
-@@ -1603,6 +1728,11 @@
+@@ -1609,6 +1734,11 @@
        case 6: 
          distr_func = fo_multiapp_direct_distribution_func;
        break;
