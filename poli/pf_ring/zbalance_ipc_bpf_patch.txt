@@ -42,7 +42,7 @@ index 7dd7ad6..c82173e 100644
           "                 5 - GRE hash (Inner or Outer Source/Dest IP)\n"
           "                 6 - Interface X to queue X\n"
 -         "                 7 - VLAN ID encapsulated in Ethernet type 0x8585 (see -Y). Queue is selected based on -M. Other Ethernet types to queue 0.\n");
-+         "                 7 - VLAN ID encapsulated in Ethernet type 0x8585 (see -Y). Queue is selected based on -M. Other Ethernet types to queue 0.\n")
++         "                 7 - VLAN ID encapsulated in Ethernet type 0x8585 (see -Y). Queue is selected based on -M. Other Ethernet types to queue 0.\n"
 +#ifdef ENABLE_BPF
 +         "                 8 - BPF balance mode: custom balancer by using BPF filters\n"
 +         "                 9 - BPF split mode: optimized balance mode by using a BPF filter\n"
